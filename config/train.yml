@@ -19,10 +19,10 @@ config:
         linear_alpha: 16
       save:
         dtype: float16 # precision to save
-        save_every: 600 # save every this many steps
-        max_step_saves_to_keep: 2 # how many intermittent saves to keep
+        save_every: 200 # save every this many steps
+        max_step_saves_to_keep: 100 # how many intermittent saves to keep
         push_to_hub: false #change this to True to push your trained model to Hugging Face.
-        # You can either set up a HF_TOKEN env variable or you'll be prompted to log-in         
+        # You can either set up a HF_[trigger]EN env variable or you'll be prompted to log-in         
 #       hf_repo_id: your-username/your-model-slug
 #       hf_private: true #whether the repo is private or public
       datasets:
@@ -34,7 +34,7 @@ config:
         - folder_path: "/root/ai-toolkit/images/rafa"
           caption_ext: "txt"
           caption_dropout_rate: 0.05  # will drop out the caption 5% of time
-          shuffle_tokens: false  # shuffle caption order, split by commas
+          shuffle_[trigger]ens: false  # shuffle caption order, split by commas
           cache_latents_to_disk: true  # leave this true unless you know what you're doing
           resolution: [ 512, 768, 1024 ]  # flux enjoys multiple resolutions
       train:
@@ -75,21 +75,61 @@ config:
         prompts:
           # you can add [trigger] to the prompts here and it will be replaced with the trigger word
 #          - "[trigger] holding a sign that says 'I LOVE PROMPTS!'"\
-          - "woman with red hair, playing chess at the park, bomb going off in the background"
-          - "a woman holding a coffee cup, in a beanie, sitting at a cafe, in the style of [trigger]"
-          - "a horse is a DJ at a night club, fish eye lens, smoke machine, lazer lights, holding a martini"
-          - "[trigger] showing off his cool new t shirt at the beach, a shark is jumping out of the water in the background"
-          - "a bear building a log cabin in the snow covered mountains, in the style of [trigger]"
-          - "woman playing the guitar, on stage, singing a song, laser lights, punk rocker"
-          - "hipster man with a beard, building a chair, in a wood shop in the style of [trigger]"
-          - "photo of a man, white background, medium shot, modeling clothing, studio lighting, white backdrop"
-          - "a man holding a sign that says, 'this is a sign' in the style of [trigger]"
-          - "a bulldog, in a post apocalyptic world, with a shotgun, in a leather jacket, in a desert, with a motorcycle"
+           - "Corporate Leader: A male named [trigger], Caucasian, with neatly combed dark hair and clean-shaven, wearing a dark suit with a blue tie. He is standing confidently with arms crossed, against a sleek glass office backdrop."
+           - "Corporate Leader: A male named Rafael, Caucasian, with neatly combed dark hair and clean-shaven, wearing a dark suit with a blue tie. He is standing confidently with arms crossed, against a sleek glass office backdrop."
+           - "Business Casual Look: A male named [trigger], Caucasian, with short brown hair, a neatly trimmed beard, wearing a button-up shirt with the sleeves rolled up, standing with one hand in his pocket in front of a modern office space."
+           - "Business Casual Look: A male named Rafael, Caucasian, with short brown hair, a neatly trimmed beard, wearing a button-up shirt with the sleeves rolled up, standing with one hand in his pocket in front of a modern office space."
+           - "Startup Founder: A male named [trigger], Caucasian, with medium-length blond hair, wearing a casual t-shirt under a blazer. He is smiling confidently, standing in a loft-style workspace with large windows and modern furniture behind him."
+           - "Startup Founder: A male named Rafael, Caucasian, with medium-length blond hair, wearing a casual t-shirt under a blazer. He is smiling confidently, standing in a loft-style workspace with large windows and modern furniture behind him."
+           - "Outdoor Professional Scene: A male named [trigger], Caucasian, with short light brown hair, wearing a light blue shirt and khaki pants, standing in front of a blurred park with greenery and sunlight filtering through."
+           - "Outdoor Professional Scene: A male named Rafael, Caucasian, with short light brown hair, wearing a light blue shirt and khaki pants, standing in front of a blurred park with greenery and sunlight filtering through."
+           - "Executive Business Formal: A male named [trigger], Caucasian, with short dark brown hair and clean-shaven face, wearing a formal dark suit and red tie. He is standing with his hands clasped in front, posed in a corporate office setting with glass walls."
+           - "Executive Business Formal: A male named Rafael, Caucasian, with short dark brown hair and clean-shaven face, wearing a formal dark suit and red tie. He is standing with his hands clasped in front, posed in a corporate office setting with glass walls."
+           - "Outdoor Casual Style: A male named [trigger], Caucasian, with short blond hair and stubble, wearing a light jacket over a t-shirt, standing with one arm leaning against a fence in a relaxed outdoor park setting."
+           - "Outdoor Casual Style: A male named Rafael, Caucasian, with short blond hair and stubble, wearing a light jacket over a t-shirt, standing with one arm leaning against a fence in a relaxed outdoor park setting."
+           - "Tech Professional: A male named [trigger], Caucasian, with short curly hair and glasses, wearing a business-casual button-up shirt, standing with arms crossed in front of a tech startup office environment with desks and computers in the background."
+           - "Tech Professional: A male named Rafael, Caucasian, with short curly hair and glasses, wearing a business-casual button-up shirt, standing with arms crossed in front of a tech startup office environment with desks and computers in the background."
+           - "Creative Professional: A male named [trigger], Caucasian, with wavy brown hair and a slight beard, wearing a colorful patterned shirt and casual blazer, standing in front of an abstract art-filled creative studio."
+           - "Creative Professional: A male named Rafael, Caucasian, with wavy brown hair and a slight beard, wearing a colorful patterned shirt and casual blazer, standing in front of an abstract art-filled creative studio."
+           - "Outdoor Executive: A male named [trigger], Caucasian, with neatly combed gray hair, wearing a dark suit without a tie, smiling confidently while standing in front of a modern glass office building with a blurred city skyline behind."
+           - "Outdoor Executive: A male named Rafael, Caucasian, with neatly combed gray hair, wearing a dark suit without a tie, smiling confidently while standing in front of a modern glass office building with a blurred city skyline behind."
+           - "Minimalist Studio Look: A male named [trigger], Caucasian, with short black hair and a clean-shaven face, wearing a crisp white shirt and gray blazer, standing with hands in pockets in front of a clean, white studio backdrop."
+           - "Minimalist Studio Look: A male named Rafael, Caucasian, with short black hair and a clean-shaven face, wearing a crisp white shirt and gray blazer, standing with hands in pockets in front of a clean, white studio backdrop."
+           - "Relaxed Business Vibe: A male named [trigger], Caucasian, with messy blond hair and light stubble, wearing a button-up shirt with rolled-up sleeves, standing in a modern office with a casual posture and smiling slightly."
+           - "Relaxed Business Vibe: A male named Rafael, Caucasian, with messy blond hair and light stubble, wearing a button-up shirt with rolled-up sleeves, standing in a modern office with a casual posture and smiling slightly."
+           - "Corporate Outdoor Headshot: A male named [trigger], Caucasian, with short dark hair, clean-shaven, wearing a dark business suit and tie, standing in front of an outdoor terrace with blurred trees and modern buildings behind him."
+           - "Corporate Outdoor Headshot: A male named Rafael, Caucasian, with short dark hair, clean-shaven, wearing a dark business suit and tie, standing in front of an outdoor terrace with blurred trees and modern buildings behind him."
+           - "Studio Portrait in Business Casual: A male named [trigger], Caucasian, with short brown hair and glasses, wearing a light gray blazer over a t-shirt. He’s standing with one hand casually resting at his side, in front of a solid neutral backdrop."
+           - "Studio Portrait in Business Casual: A male named Rafael, Caucasian, with short brown hair and glasses, wearing a light gray blazer over a t-shirt. He’s standing with one hand casually resting at his side, in front of a solid neutral backdrop."
+           - "Formal Business Professional: A male named [trigger], Caucasian, with short blond hair, wearing a black suit, white shirt, and no tie, smiling confidently while standing with both hands in his pockets, in front of a polished office setting."
+           - "Formal Business Professional: A male named Rafael, Caucasian, with short blond hair, wearing a black suit, white shirt, and no tie, smiling confidently while standing with both hands in his pockets, in front of a polished office setting."
+           - "Creative Studio Environment: A male named [trigger], Caucasian, with medium-length wavy hair and a clean-shaven face, wearing a casual open-collared shirt, standing with arms crossed in front of a colorful creative office space with art pieces."
+           - "Creative Studio Environment: A male named Rafael, Caucasian, with medium-length wavy hair and a clean-shaven face, wearing a casual open-collared shirt, standing with arms crossed in front of a colorful creative office space with art pieces."
+           - "Modern Corporate Setting: A male named [trigger], Caucasian, with short brown hair and a slight beard, wearing a tailored business suit, standing confidently in front of a sleek glass office wall with the skyline slightly blurred behind him."
+           - "Modern Corporate Setting: A male named Rafael, Caucasian, with short brown hair and a slight beard, wearing a tailored business suit, standing confidently in front of a sleek glass office wall with the skyline slightly blurred behind him."
+           - "Outdoor Relaxed Look: A male named [trigger], Caucasian, with shoulder-length light brown hair, wearing a simple sweater and jeans, standing casually with his hands in his pockets in front of a blurred nature park with trees."
+           - "Outdoor Relaxed Look: A male named Rafael, Caucasian, with shoulder-length light brown hair, wearing a simple sweater and jeans, standing casually with his hands in his pockets in front of a blurred nature park with trees."
+           - "Academic Style Portrait: A male named [trigger], Caucasian, with short blond hair, clean-shaven, wearing a professional blazer over a patterned shirt. He is standing with a tablet in hand, posed in front of a university library backdrop."
+           - "Academic Style Portrait: A male named Rafael, Caucasian, with short blond hair, clean-shaven, wearing a professional blazer over a patterned shirt. He is standing with a tablet in hand, posed in front of a university library backdrop."
+           - "Rustic Outdoor Professional: A male named [trigger], Caucasian, with medium-length brown hair, wearing a checked shirt and a light jacket, standing with one arm leaning on a wooden fence in a natural outdoor setting with blurred trees."
+           - "Rustic Outdoor Professional: A male named Rafael, Caucasian, with medium-length brown hair, wearing a checked shirt and a light jacket, standing with one arm leaning on a wooden fence in a natural outdoor setting with blurred trees."
+           - "Polished Business Formal: A male named [trigger], Caucasian, with short dark brown hair and a neatly trimmed beard, wearing a sharp navy blue suit and tie. He’s standing with arms crossed, posed in a well-lit corporate office with large windows."
+           - "Polished Business Formal: A male named Rafael, Caucasian, with short dark brown hair and a neatly trimmed beard, wearing a sharp navy blue suit and tie. He’s standing with arms crossed, posed in a well-lit corporate office with large windows."
+           - "Outdoor Casual Professional: A male named [trigger], Caucasian, with short blond hair, wearing a light-colored polo shirt and jeans, standing with his hands at his sides in front of a blurred outdoor café setting."
+           - "Outdoor Casual Professional: A male named Rafael, Caucasian, with short blond hair, wearing a light-colored polo shirt and jeans, standing with his hands at his sides in front of a blurred outdoor café setting."
+           - "Casual Corporate Look: A male named [trigger], Caucasian, with wavy brown hair and light stubble, wearing a white button-up shirt under a dark blazer, smiling confidently while standing in front of a modern co-working office."
+           - "Casual Corporate Look: A male named Rafael, Caucasian, with wavy brown hair and light stubble, wearing a white button-up shirt under a dark blazer, smiling confidently while standing in front of a modern co-working office."
+           - "Relaxed Business Attire: A male named [trigger], Caucasian, with neatly trimmed brown hair, clean-shaven, wearing a gray dress shirt and dark slacks, standing casually with one hand in his pocket, posed in front of an office environment."
+           - "Relaxed Business Attire: A male named Rafael, Caucasian, with neatly trimmed brown hair, clean-shaven, wearing a gray dress shirt and dark slacks, standing casually with one hand in his pocket, posed in front of an office environment."
+           - "Outdoor Professional Portrait: A male named [trigger], Caucasian, with light brown hair and light stubble, wearing a casual button-up shirt, standing in a bright outdoor setting with trees and blue sky blurred behind him."
+           - "Outdoor Professional Portrait: A male named Rafael, Caucasian, with light brown hair and light stubble, wearing a casual button-up shirt, standing in a bright outdoor setting with trees and blue sky blurred behind him."
+           - "Corporate Office Headshot: A male named [trigger], Caucasian, with short black hair, clean-shaven, wearing a dark suit jacket over a white shirt, standing confidently with arms crossed in front of a modern office hallway with glass walls."
+           - "Corporate Office Headshot: A male named Rafael, Caucasian, with short black hair, clean-shaven, wearing a dark suit jacket over a white shirt, standing confidently with arms crossed in front of a modern office hallway with glass walls."
         neg: ""  # not used on flux
-        seed: 42
-        walk_seed: true
+        seed: 936188
+        walk_seed: false
         guidance_scale: 4
-        sample_steps: 20
+        sample_steps: 35
 # you can add any additional meta info here. [name] is replaced with config name at top
 meta:
   name: "Rafa"
