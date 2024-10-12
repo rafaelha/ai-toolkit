@@ -1,0 +1,106 @@
+---
+job: extension
+config:
+  # this name will be the folder and filename name
+  name: "rafa_lora_v1"
+  process:
+    - type: 'sd_trainer'
+      # root folder to save training sessions/samples/weights
+      training_folder: "output/rafa_lora_v1"
+      # uncomment to see performance stats in the terminal every N steps
+#      performance_log_every: 1000
+      device: cuda:0
+      # if a trigger word is specified, it will be added to captions of training data if it does not already exist
+      # alternatively, in your captions you can add [trigger] and it will be replaced with the trigger word
+      trigger_word: "TOK"
+      network:
+        type: "lora"
+        linear: 16
+        linear_alpha: 16
+      save:
+        dtype: float16 # precision to save
+        save_every: 200 # save every this many steps
+        max_step_saves_to_keep: 100 # how many intermittent saves to keep
+        push_to_hub: false #change this to True to push your trained model to Hugging Face.
+        # You can either set up a HF_[trigger]EN env variable or you'll be prompted to log-in         
+#       hf_repo_id: your-username/your-model-slug
+#       hf_private: true #whether the repo is private or public
+      datasets:
+        # datasets are a folder of images. captions need to be txt files with the same name as the image
+        # for instance image2.jpg and image2.txt. Only jpg, jpeg, and png are supported currently
+        # images will automatically be resized and bucketed into the resolution specified
+        # on windows, escape back slashes with another backslash so
+        # "C:\\path\\to\\images\\folder"
+        - folder_path: "/root/ai-toolkit/images/j"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05  # will drop out the caption 5% of time
+          shuffle_[trigger]ens: false  # shuffle caption order, split by commas
+          cache_latents_to_disk: true  # leave this true unless you know what you're doing
+          resolution: [ 512, 768, 1024 ]  # flux enjoys multiple resolutions
+      train:
+        batch_size: 1
+        steps: 3000  # total number of steps to train 500 - 4000 is a good range
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false  # probably won't work with flux
+        gradient_checkpointing: true  # need the on unless you have a ton of vram
+        noise_scheduler: "flowmatch" # for training only
+        optimizer: "adamw8bit"
+        lr: 1e-4
+        # uncomment this to skip the pre training sample
+#        skip_first_sample: true
+        # uncomment to completely disable sampling
+#        disable_sampling: true
+        # uncomment to use new vell curved weighting. Experimental but may produce better results
+#        linear_timesteps: true
+
+        # ema will smooth out learning, but could slow it down. Recommended to leave on.
+        ema_config:
+          use_ema: true
+          ema_decay: 0.99
+
+        # will probably need this if gpu supports it for flux, other dtypes may not work correctly
+        dtype: bf16
+      model:
+        # huggingface model name or path
+        name_or_path: "black-forest-labs/FLUX.1-dev"
+        is_flux: true
+        quantize: true  # run 8bit mixed precision
+#        low_vram: true  # uncomment this if the GPU is connected to your monitors. It will use less vram to quantize, but is slower.
+      sample:
+        sampler: "flowmatch" # must match train.noise_scheduler
+        sample_every: 200 # sample every this many steps
+        width: 1024
+        height: 1024
+        prompts:
+          # you can add [trigger] to the prompts here and it will be replaced with the trigger word
+#          - "[trigger] holding a sign that says 'I LOVE PROMPTS!'"\
+           - "Studio Portrait with a Soft Smile: A full upper body shot of TOK, a woman with long, wavy blonde hair and blue eyes, standing in a professional studio setting. Her hair falls softly over her shoulders, and she is smiling gently at the camera. The plain white backdrop highlights her light skin and natural features. Soft, even lighting emphasizes her soft expression and well-defined eyebrows."
+           - "Outdoor Shot with Gentle Expression: A full upper body shot of TOK standing in a park, her long, wavy blonde hair gently blowing in the breeze. She has a calm, neutral expression, her blue eyes gazing into the camera. The background is filled with greenery, slightly blurred to keep the focus on TOK’s light skin and natural beauty. The sunlight filters through the trees, creating a peaceful, warm atmosphere."
+           - "Golden Hour Sunset Glow: A full upper body shot of TOK, with her wavy blonde hair glowing in the warm light of golden hour. She stands outdoors, the soft oranges and pinks of the setting sun behind her. Her blue eyes reflect the light, and her expression is relaxed, with a slight smile. The distant hills and body of water in the background are softly blurred, keeping the focus on her serene presence."
+           - "Professional Indoor Headshot with Direct Gaze: A full upper body shot of TOK in a modern office setting with large windows behind her. Her long, wavy blonde hair is styled naturally, and she looks directly into the camera with a confident, neutral expression. The background features a sleek, minimalistic interior with soft, natural light flooding the space, highlighting her blue eyes and defined features."
+           - "Softly Lit Portrait Against a Black Backdrop: A full upper body shot of TOK, standing in a studio with a black, gradient backdrop. Her wavy blonde hair cascades over her shoulders as she gazes into the camera with a calm expression. Her light skin and blue eyes are softly illuminated by even studio lighting, giving the image a professional, yet intimate feel."
+           - "Outdoor Marina View with Playful Smile: A full upper body shot of TOK standing near a marina, smiling warmly at the camera. Her long, wavy blonde hair is shining in the soft daylight, and her blue eyes are bright. The background features blurred yachts and palm trees, with a hint of an urban cityscape. The overcast sky provides even, flattering lighting, which softens her features."
+           - "Elegant Studio Shot with Natural Expression: A full upper body shot of TOK standing against a light gray studio backdrop. Her blonde hair, styled in soft waves, falls over her shoulders, framing her face. She is looking slightly to the side, with a neutral, thoughtful expression. The studio lighting is soft, casting gentle shadows that accentuate her light skin and well-defined facial features."
+           - "Sunlit Garden Portrait with a Smile: A full upper body shot of TOK standing in a sunlit garden, surrounded by blurred greenery. Her long, wavy blonde hair catches the natural light, and her blue eyes are bright as she smiles softly at the camera. The soft sunlight enhances her light skin and creates a warm, inviting atmosphere."
+           - "Confident Office Setting Headshot: A full upper body shot of TOK standing in a professional office setting with large windows providing natural light. Her wavy blonde hair is styled casually, and her blue eyes are focused directly on the camera. She has a confident, composed expression, and the minimalist office background, with sleek furniture and soft lighting, emphasizes her professional demeanor."
+           - "Urban Outdoor Portrait with Soft Expression: A full upper body shot of TOK standing on a city street, with blurred urban buildings in the background. Her long, wavy blonde hair is styled naturally, and she is looking slightly to the side with a soft expression. The natural daylight casts a warm glow on her light skin, and her blue eyes reflect the light, adding depth to the portrait."
+           - "Sunset Lake View with Relaxed Smile: A full upper body shot of TOK standing by a lake at sunset. Her long, wavy blonde hair glows in the soft, warm light of the setting sun. She is smiling gently, with her blue eyes reflecting the golden hues of the sky. The blurred background features the calm waters of the lake and distant hills, creating a serene and relaxed atmosphere."
+           - "Studio Shot with a Bold Gaze: A full upper body shot of TOK standing against a dark, textured studio backdrop. Her blonde hair is styled in loose waves, framing her face. She gazes directly into the camera with a bold, confident expression. The even studio lighting highlights her light skin and blue eyes, making her features stand out against the darker background."
+           - "Elegant Portrait with Soft Lighting: A full upper body shot of TOK in a professional studio, standing against a soft beige background. Her wavy blonde hair falls gracefully over her shoulders, and she is looking slightly to the side with a gentle expression. The soft, even lighting creates a smooth, natural look, highlighting her blue eyes and well-defined facial features."
+           - "Serene Outdoor Portrait with Marina Background: A full upper body shot of TOK standing outdoors near a marina, with her long, wavy blonde hair flowing naturally. She is smiling softly, her blue eyes bright against the backdrop of blurred yachts and waterfront buildings. The natural daylight casts an even, flattering light on her face, creating a relaxed and serene mood."
+           - "Warm Indoor Portrait with Subtle Smile: A full upper body shot of TOK standing in a warmly lit room, her blonde hair styled in loose waves. She is smiling softly, with her blue eyes focused directly on the camera. The background features a cozy, indoor setting with warm tones, softly blurred to keep the focus on her gentle expression."
+           - "Modern Office Headshot with Direct Gaze: A full upper body shot of TOK in a sleek, modern office environment with large windows providing natural light. Her wavy blonde hair is styled neatly, and she gazes confidently into the camera with a neutral expression. The background features a minimalist office interior, softly blurred to emphasize her blue eyes and facial features."
+           - "Sunset Portrait with Warm Lighting: A full upper body shot of TOK standing outdoors at sunset, her blonde hair catching the warm light of the setting sun. She is smiling softly, her blue eyes reflecting the golden hues of the sky. The background is a blurred landscape of trees and hills, creating a peaceful and warm atmosphere."
+           - "Studio Portrait with Soft Beige Background: A full upper body shot of TOK standing in a professional studio against a soft beige backdrop. Her long, wavy blonde hair falls naturally over her shoulders, and she has a neutral expression as she looks directly into the camera. The soft studio lighting highlights her light skin and blue eyes, giving the portrait a polished, professional look."
+           - "Outdoor Portrait with City Skyline: A full upper body shot of TOK standing on a rooftop with a city skyline blurred in the background. Her long blonde hair is styled in loose waves, and she has a calm, neutral expression. The soft daylight creates a flattering, natural glow on her light skin, and the urban environment adds a modern touch to the portrait."
+           - "Elegant Studio Shot with Textured Backdrop: A full upper body shot of TOK standing in a studio with a dark, textured background. Her long, wavy blonde hair is neatly styled, and she is looking slightly to the side with a thoughtful expression. The even studio lighting highlights her well-defined features and blue eyes, making her the clear focus of the image."
+        neg: ""  # not used on flux
+        seed: 936188
+        walk_seed: false
+        guidance_scale: 1
+        sample_steps: 35
+# you can add any additional meta info here. [name] is replaced with config name at top
+meta:
+  name: "J"
+  version: '1.0'
