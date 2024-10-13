@@ -2,11 +2,11 @@
 job: extension
 config:
   # this name will be the folder and filename name
-  name: "rafa_lora_v1"
+  name: "j_lora_v1"
   process:
     - type: 'sd_trainer'
       # root folder to save training sessions/samples/weights
-      training_folder: "output/rafa_lora_v1"
+      training_folder: "output/j_lora_v1"
       # uncomment to see performance stats in the terminal every N steps
 #      performance_log_every: 1000
       device: cuda:0
@@ -34,7 +34,7 @@ config:
         - folder_path: "/root/ai-toolkit/images/j"
           caption_ext: "txt"
           caption_dropout_rate: 0.05  # will drop out the caption 5% of time
-          shuffle_[trigger]ens: false  # shuffle caption order, split by commas
+          shuffle_tokens: false  # shuffle caption order, split by commas
           cache_latents_to_disk: true  # leave this true unless you know what you're doing
           resolution: [ 512, 768, 1024 ]  # flux enjoys multiple resolutions
       train:
