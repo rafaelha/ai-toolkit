@@ -10,6 +10,7 @@ from collections import OrderedDict
 from diffusers import Transformer2DModel, FluxTransformer2DModel
 from transformers import T5EncoderModel, CLIPTextModel, CLIPTokenizer, T5Tokenizer, CLIPVisionModelWithProjection
 from toolkit.models.pixtral_vision import PixtralVisionEncoder, PixtralVisionImagePreprocessor, VisionLanguageAdapter
+from transformers import SiglipImageProcessor, SiglipVisionModel
 
 from toolkit.config_modules import AdapterConfig
 from toolkit.paths import REPOS_ROOT
@@ -19,6 +20,54 @@ sys.path.append(REPOS_ROOT)
 if TYPE_CHECKING:
     from toolkit.stable_diffusion_model import StableDiffusion
     from toolkit.custom_adapter import CustomAdapter
+    
+
+# matches distribution of randn
+class Norm(nn.Module):
+    def __init__(self, target_mean=0.0, target_std=1.0, eps=1e-6):
+        super(Norm, self).__init__()
+        self.target_mean = target_mean
+        self.target_std = target_std
+        self.eps = eps
+
+    def forward(self, x):
+        dims = tuple(range(1, x.dim()))
+        mean = x.mean(dim=dims, keepdim=True)
+        std = x.std(dim=dims, keepdim=True)
+        
+        # Normalize
+        return self.target_std * (x - mean) / (std + self.eps) + self.target_mean
+
+
+norm_layer = Norm()
+    
+class SparseAutoencoder(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(SparseAutoencoder, self).__init__()
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, output_dim),
+        )
+        self.norm = Norm()
+        self.decoder = nn.Sequential(
+            nn.Linear(output_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, input_dim),
+        )
+        self.last_run = None
+
+    def forward(self, x):
+        self.last_run = {
+            "input": x
+        }
+        x = self.encoder(x)
+        x = self.norm(x)
+        self.last_run["sparse"] = x
+        x = self.decoder(x)
+        x = self.norm(x)
+        self.last_run["output"] = x
+        return x
 
 
 class MLPR(nn.Module):  # MLP with reshaping
@@ -466,11 +515,17 @@ class VisionDirectAdapter(torch.nn.Module):
         is_pixtral = self.config.image_encoder_arch == "pixtral"
 
         if adapter.config.clip_layer == "image_embeds":
-            self.token_size = vision_model.config.projection_dim
+            if isinstance(vision_model, SiglipVisionModel):
+                self.token_size = vision_model.config.hidden_size
+            else:
+                self.token_size = vision_model.config.projection_dim
         else:
             self.token_size = vision_model.config.hidden_size
             
         self.mid_size = self.token_size
+        
+        if self.config.conv_pooling and self.config.conv_pooling_stacks > 1:
+            self.mid_size = self.mid_size * self.config.conv_pooling_stacks
         
         # if pixtral, use cross attn dim for more sparse representation if only doing double transformers
         if is_pixtral and self.config.flux_only_double:
@@ -656,20 +711,30 @@ class VisionDirectAdapter(torch.nn.Module):
             self.block_scaler.requires_grad = True
         else:
             self.block_scaler = None
+        
+        self.pool = None
 
         if self.config.num_tokens is not None:
-            image_encoder_state_dict = self.adapter_ref().vision_encoder.state_dict()
+            # image_encoder_state_dict = self.adapter_ref().vision_encoder.state_dict()
             # max_seq_len = CLIP tokens + CLS token
-            max_seq_len = 257
-            if "vision_model.embeddings.position_embedding.weight" in image_encoder_state_dict:
-                # clip
-                max_seq_len = int(
-                    image_encoder_state_dict["vision_model.embeddings.position_embedding.weight"].shape[0])
-            self.resampler = MLPR(
-                in_dim=self.token_size,
-                in_channels=max_seq_len,
-                out_dim=self.mid_size,
-                out_channels=self.config.num_tokens,
+            # max_seq_len = 257
+            # if "vision_model.embeddings.position_embedding.weight" in image_encoder_state_dict:
+            #     # clip
+            #     max_seq_len = int(
+            #         image_encoder_state_dict["vision_model.embeddings.position_embedding.weight"].shape[0])
+            # self.resampler = MLPR(
+            #     in_dim=self.token_size,
+            #     in_channels=max_seq_len,
+            #     out_dim=self.mid_size,
+            #     out_channels=self.config.num_tokens,
+            # )
+            vision_config = self.adapter_ref().vision_encoder.config
+            # sequence_length = int((vision_config.image_size / vision_config.patch_size) ** 2 + 1)
+            # siglip doesnt add 1
+            sequence_length = int((vision_config.image_size / vision_config.patch_size) ** 2)
+            self.pool = nn.Sequential(
+                nn.Conv1d(sequence_length, self.config.num_tokens, 1, bias=False),
+                Norm(),
             )
         
         elif self.config.image_encoder_arch == "pixtral":
@@ -677,6 +742,29 @@ class VisionDirectAdapter(torch.nn.Module):
                 in_dim=self.token_size,
                 out_dim=self.mid_size,
             )
+        
+        self.sparse_autoencoder = None
+        if self.config.conv_pooling:
+            vision_config = self.adapter_ref().vision_encoder.config
+            # sequence_length = int((vision_config.image_size / vision_config.patch_size) ** 2 + 1)
+            # siglip doesnt add 1
+            sequence_length = int((vision_config.image_size / vision_config.patch_size) ** 2)
+            self.pool = nn.Sequential(
+                nn.Conv1d(sequence_length, self.config.conv_pooling_stacks, 1, bias=False),
+                Norm(),
+            )
+        if self.config.sparse_autoencoder_dim is not None:
+            hidden_dim  = self.token_size * 2
+            if hidden_dim > self.config.sparse_autoencoder_dim:
+                hidden_dim = self.config.sparse_autoencoder_dim
+            self.sparse_autoencoder = SparseAutoencoder(
+                input_dim=self.token_size,
+                hidden_dim=hidden_dim,
+                output_dim=self.config.sparse_autoencoder_dim
+            )
+        
+        if self.config.clip_layer == "image_embeds":
+            self.proj = nn.Linear(self.token_size, self.token_size)
 
     def state_dict(self, destination=None, prefix='', keep_vars=False):
         if self.config.train_scaler:
@@ -695,10 +783,21 @@ class VisionDirectAdapter(torch.nn.Module):
     def forward(self, input):
         # block scaler keeps moving dtypes. make sure it is float32 here
         # todo remove this when we have a real solution
+        
         if self.block_scaler is not None and self.block_scaler.dtype != torch.float32:
             self.block_scaler.data = self.block_scaler.data.to(torch.float32)
+        # if doing image_embeds, normalize here
+        if self.config.clip_layer == "image_embeds":
+            input = norm_layer(input)
+            input = self.proj(input)
         if self.resampler is not None:
             input = self.resampler(input)
+        if self.pool is not None:
+            input = self.pool(input)
+            if self.config.conv_pooling_stacks > 1:
+                input = torch.cat(torch.chunk(input, self.config.conv_pooling_stacks, dim=1), dim=2)
+        if self.sparse_autoencoder is not None:
+            input = self.sparse_autoencoder(input)
         return input
 
     def to(self, *args, **kwargs):
